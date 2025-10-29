@@ -23,9 +23,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests
         
-    - name: Download and process playlist
+    - name: Create Python script
       run: |
-        python << 'EOF'
+        cat > process_playlist.py << 'EOF'
 import requests
 import re
 import sys
@@ -48,7 +48,6 @@ def extract_groups(content):
     iqiyi_content = []
     
     # 更精确的正则表达式匹配分组
-    # 匹配 "赛事咪咕,#genre#" 到下一个 "#genre#" 或文件结尾之间的内容
     migu_pattern = r'赛事咪咕,#genre#(.*?)(?=#genre#|\Z)'
     iqiyi_pattern = r'爱奇频道,#genre#(.*?)(?=#genre#|\Z)'
     
@@ -57,7 +56,6 @@ def extract_groups(content):
     if migu_matches:
         migu_block = migu_matches[0].strip()
         migu_lines = [line.strip() for line in migu_block.split('\n') if line.strip()]
-        # 过滤掉空行和不符合格式的行
         for line in migu_lines:
             if line and ',' in line and not line.startswith('#'):
                 migu_content.append(line)
@@ -67,7 +65,6 @@ def extract_groups(content):
     if iqiyi_matches:
         iqiyi_block = iqiyi_matches[0].strip()
         iqiyi_lines = [line.strip() for line in iqiyi_block.split('\n') if line.strip()]
-        # 过滤掉空行和不符合格式的行
         for line in iqiyi_lines:
             if line and ',' in line and not line.startswith('#'):
                 iqiyi_content.append(line)
@@ -75,7 +72,6 @@ def extract_groups(content):
     return migu_content, iqiyi_content
 
 def save_txt_files(migu_content, iqiyi_content):
-    # 保存为txt文件
     try:
         with open('migu.txt', 'w', encoding='utf-8') as f:
             for line in migu_content:
@@ -107,7 +103,6 @@ def convert_to_m3u():
                     parts = line.split(',', 1)
                     if len(parts) == 2:
                         name, url = parts
-                        # 基本URL验证
                         if url.startswith(('http://', 'https://')):
                             f.write(f'#EXTINF:-1,{name}\n')
                             f.write(f'{url}\n')
@@ -131,7 +126,6 @@ def convert_to_m3u():
                     parts = line.split(',', 1)
                     if len(parts) == 2:
                         name, url = parts
-                        # 基本URL验证
                         if url.startswith(('http://', 'https://')):
                             f.write(f'#EXTINF:-1,{name}\n')
                             f.write(f'{url}\n')
@@ -150,10 +144,6 @@ def main():
     if content:
         print("下载成功，开始处理内容...")
         
-        # 保存原始内容用于调试
-        with open('original_content.txt', 'w', encoding='utf-8') as f:
-            f.write(content[:5000])  # 只保存前5000字符用于调试
-        
         migu_content, iqiyi_content = extract_groups(content)
         
         print(f"找到咪咕频道: {len(migu_content)} 个")
@@ -170,7 +160,6 @@ def main():
         
         if not migu_content and not iqiyi_content:
             print("警告: 没有找到任何频道内容，请检查源文件格式")
-            # 输出部分原始内容用于调试
             print("原始内容前500字符:")
             print(content[:500])
         
@@ -185,6 +174,9 @@ def main():
 if __name__ == "__main__":
     main()
 EOF
+        
+    - name: Run Python script
+      run: python process_playlist.py
         
     - name: List generated files
       run: ls -la *.txt *.m3u 2>/dev/null || echo "未找到文件"
