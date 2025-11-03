@@ -108,7 +108,7 @@ def convert_to_m3u():
         print(f"转换爱奇艺文件失败: {e}")
 
 def main():
-    url = "http://rihou.cc:567/gggg.nzk/"
+    url = "http://rihou.cc:555/gggg.nzk/"
     
     print("开始下载播放列表...")
     content = download_playlist(url)
